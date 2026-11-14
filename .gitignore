@@ -1,3 +1,5 @@
-requirements.txt.venv/
+.venv/
 .venv-msys2/
+__pycache__/
+*.py[cod]
 .ipynb_checkpoints/
