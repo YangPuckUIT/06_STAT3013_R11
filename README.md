@@ -1,6 +1,6 @@
 # Randomness, Pity Mechanisms, and Pricing in Gacha Games
 
-**STAT3013 · Group [YY] · Class [XX]**
+**STAT3013 group project**
 
 Project title: *The Effects of Randomness, Pity Mechanisms, and Pricing on Player Satisfaction and Spending in Gacha Games: Implications for Game Revenue*
 
@@ -10,13 +10,13 @@ This repository holds the analysis code, data and outputs for the group project.
 
 ## The five stages
 
-| Stage | Question | Methods | Owner |
-|---|---|---|---|
-| 1. Descriptive | Who are the players, how much do they spend, is spending concentrated? | Descriptive statistics, Gini, Lorenz curve | Huyền |
-| 2. Inferential | Are the links seen in the sample real, or due to chance? | Spearman, chi-square, Holm correction | Phúc |
-| 3. Regression | Which factors are associated with higher spending? | Ordered logit | Minh |
-| 4. Satisfaction | Do players who spend more also feel more satisfied? | % satisfied with Wilson 95% CI | Anh |
-| 5. ML forecasting | Do new-character banners improve the revenue forecast? | ARIMA, LightGBM | Hương |
+| Stage | Question | Methods |
+|---|---|---|
+| 1. Descriptive | Who are the players, how much do they spend, is spending concentrated? | Descriptive statistics, Gini, Lorenz curve |
+| 2. Inferential | Are the links seen in the sample real, or due to chance? | Spearman, chi-square, Holm correction |
+| 3. Regression | Which factors are associated with higher spending? | Ordered logit |
+| 4. Satisfaction | Do players who spend more also feel more satisfied? | % satisfied with Wilson 95% CI |
+| 5. ML forecasting | Do new-character banners improve the revenue forecast? | ARIMA, LightGBM |
 
 We write "is associated with", not "causes": the survey is a one-time snapshot.
 
@@ -26,7 +26,7 @@ We write "is associated with", not "causes": the survey is a one-time snapshot.
 - **Cleaning (761 → 510 rows):** removed 8 non-players, 104 under-18s, 72 who failed the attention check (Q31), 60 with contradictory answers and 7 who gave the same answer to every question.
 - **File:** `Dataset/gacha_clean.csv` (510 rows, 52 columns). Do not edit it by hand or re-save it from Excel.
 
-Variables used in Stage 2:
+Variables used in the core Stage 2 tests:
 
 | Variable | From | Meaning |
 |---|---|---|
@@ -38,36 +38,39 @@ Variables used in Stage 2:
 | PROMO | Q33 | Spends more during promotion events (Yes/No) |
 | SPEND_MONTH4 | Q5 | 0 = nothing, 1 = <100k, 2 = 100–300k, 3 = 300k+ VND per month |
 
-The top monthly spending bands (300k and above) are merged into one group because the separate bands have too few respondents (26, 10 and 15).
+The top three monthly spending bands (26, 10 and 15 respondents) are merged into one group of 51 so that the four spending groups are large enough and consistent across Stages 2 to 4.
 
 ## Stage 2 results
 
-Holm correction is applied across all five tests. All five remain significant (adjusted p < 0.001).
+**Core tests (5), Holm-corrected within the family.** All five remain significant.
 
-| Test | Statistic | 95% CI |
-|---|---|---|
-| LUCK ↔ SAT (Spearman) | ρ = 0.308 | 0.219 – 0.393 |
-| PITY2 ↔ SAT (Spearman) | ρ = 0.443 | 0.366 – 0.515 |
-| PRICE ↔ SAT (Spearman) | ρ = 0.454 | 0.382 – 0.524 |
-| SAT ↔ RET1 (Spearman) | ρ = 0.504 | 0.434 – 0.570 |
-| PROMO × SPEND_MONTH4 (chi-square) | χ²(3) = 144.44, Cramér's V = 0.532 | – |
+| Test | Effect | 95% CI | Adjusted p |
+|---|---|---|---|
+| LUCK ~ SAT (Spearman) | rho = 0.308 | [0.219, 0.393] | < 0.001 |
+| PITY2 ~ SAT (Spearman) | rho = 0.443 | [0.366, 0.515] | < 0.001 |
+| PRICE ~ SAT (Spearman) | rho = 0.454 | [0.382, 0.524] | < 0.001 |
+| SAT ~ RET1 (Spearman) | rho = 0.504 | [0.434, 0.570] | < 0.001 |
+| PROMO x SPEND_MONTH4 (chi-square) | chi2(3) = 144.44, V = 0.532 | – | < 0.001 |
 
-Sensitivity check, respondents who spend each month (n = 292): χ²(2) = 47.79, Cramér's V = 0.405. The association with promotions does not depend only on the zero-spending group.
+Spearman confidence intervals are bootstrap percentile intervals (5,000 resamples, fixed seed). Sensitivity checks: replacing SAT with SAT2 (Q22–23 only) gives the same pattern, and the promotion association remains among the 292 respondents with positive monthly spending (V = 0.405).
 
-Full tables and figure: `outputs/stage2/`.
+**Supplementary tests (12), Holm-corrected within their own family (exploratory).** Four remain significant: objective versus perceived luck (rho = 0.198), getting the featured character versus satisfaction (rank-biserial r = 0.28), and game differences in satisfaction and price fairness (epsilon-squared = 0.056 and 0.041; Zenless Zone Zero players rank higher on both). We found no evidence of a trend of satisfaction across monthly spending groups (H5), of an association between being near soft pity and spending (H6), or between top-up trigger and spending.
+
+All tables and figures are written to `outputs/stage2/`.
 
 ## Repository structure
 
 ```
 .
 ├── Data_Analysis/
-│   └── Stage2_Inferential.ipynb   # Stage 2 notebook
+│   └── Stage2_Inferential.ipynb   # Stage 2 notebook (single notebook)
 ├── Dataset/
 │   └── gacha_clean.csv            # cleaned survey data (510 rows)
 ├── outputs/
 │   └── stage2/
-│       ├── figures/               # PNG figures
-│       └── tables/                # CSV result tables
+│       ├── figures/               # spearman_forest, promotion_by_spending_group, sat_by_game (PNG)
+│       └── tables/                # stage2_results, stage2_dunn_posthoc,
+│                                  # stage2_sensitivity_sat2, stage2_sensitivity_h5_six_levels (CSV)
 ├── requirements.txt
 └── README.md
 ```
@@ -82,7 +85,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Open `Data_Analysis/Stage2_Inferential.ipynb` in VS Code, select the `.venv` kernel and choose **Restart and Run All**. The notebook reads `Dataset/gacha_clean.csv` and writes its tables and figure to `outputs/stage2/`.
+Open `Data_Analysis/Stage2_Inferential.ipynb` in VS Code, select the `.venv` kernel and choose **Restart and Run All**. The notebook reads `Dataset/gacha_clean.csv` and writes its tables and figures to `outputs/stage2/`.
 
 ## Limitations
 
@@ -90,6 +93,7 @@ Open `Data_Analysis/Stage2_Inferential.ipynb` in VS Code, select the `.venv` ker
 - Cross-sectional survey: results describe associations, not causes.
 - Spending is self-reported in bands; the top bands are merged.
 - Intention to keep playing (RET1) is concentrated at the top of the scale, which may lower its correlation with satisfaction.
+- Some comparison groups are small (38 respondents who did not get the featured character; 26 Wuthering Waves players).
 
 ## Data source and use
 
